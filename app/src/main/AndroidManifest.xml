@@ -63,9 +63,6 @@
             <meta-data android:name="android.view.textservice.scs" android:resource="@xml/spellchecker"/>
         </service>
 
-        <!-- Music search launched from the IME smartbar -->
-        <activity android:name="dev.patrickgold.florisboard.music.MusicSearchActivity" android:exported="false" android:theme="@style/FlorisAppTheme"/>
-
         <!-- Main App Activity -->
         <activity
             android:name="dev.patrickgold.florisboard.app.FlorisAppActivity"

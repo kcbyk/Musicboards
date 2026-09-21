@@ -24,6 +24,8 @@ import dev.patrickgold.florisboard.ime.core.SelectSubtypePanel
 import dev.patrickgold.florisboard.ime.keyboard.KeyboardState
 import dev.patrickgold.florisboard.ime.smartbar.quickaction.QuickActionsEditorPanel
 import dev.patrickgold.florisboard.keyboardManager
+import dev.patrickgold.florisboard.music.MusicPanel
+import dev.patrickgold.florisboard.music.MusicPanelState
 import kotlin.getValue
 
 @Composable
@@ -33,8 +35,9 @@ fun BottomSheetWindow() {
     val state by keyboardManager.activeState.collectAsState()
 
     BottomSheetHostUi(
-        isShowing = state.isAnyBottomSheetVisible(),
+        isShowing = state.isAnyBottomSheetVisible() || MusicPanelState.visible,
         onHide = {
+            MusicPanelState.hide()
             if (state.isActionsEditorVisible) {
                 keyboardManager.activeState.isActionsEditorVisible = false
             }
@@ -43,6 +46,9 @@ fun BottomSheetWindow() {
             }
         },
     ) {
+        if (MusicPanelState.visible) {
+            MusicPanel()
+        }
         if (state.isActionsEditorVisible) {
             QuickActionsEditorPanel()
         }

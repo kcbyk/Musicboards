@@ -17,8 +17,7 @@
 package dev.patrickgold.florisboard.ime.smartbar.quickaction
 
 import android.content.Context
-import android.content.Intent
-import dev.patrickgold.florisboard.music.MusicSearchActivity
+import dev.patrickgold.florisboard.music.MusicPanelState
 import androidx.compose.runtime.Composable
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.editorInstance
@@ -66,7 +65,7 @@ sealed class QuickAction {
     @SerialName("open_music_search")
     data object OpenMusicSearch : QuickAction() {
         override fun onPointerUp(context: Context) {
-            context.startActivity(Intent(context, MusicSearchActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            MusicPanelState.show()
         }
     }
 
