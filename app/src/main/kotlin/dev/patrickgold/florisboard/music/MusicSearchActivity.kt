@@ -94,6 +94,7 @@ class MusicSearchActivity : ComponentActivity() {
         }
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     private fun MusicSearchScreen(
         status: String?,
