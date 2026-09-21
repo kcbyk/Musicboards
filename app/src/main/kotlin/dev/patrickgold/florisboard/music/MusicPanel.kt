@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Backspace
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -75,19 +76,50 @@ fun MusicPanel() {
                 OutlinedButton(onClick = { showMiniKeyboard = !showMiniKeyboard }, modifier = Modifier.weight(1f)) {
                     Text(if (query.isBlank()) "Şarkı veya sanatçı yaz" else query, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
+                IconButton(onClick = { if (query.isNotEmpty()) query = query.dropLast(1) }, enabled = query.isNotEmpty()) {
+                    Icon(Icons.Default.Backspace, "Son harfi sil")
+                }
                 Button(onClick = ::search, enabled = query.isNotBlank() && !loading) { Text("Ara") }
             }
             if (showMiniKeyboard) {
                 MiniSearchKeyboard(
                     onChar = { query += it },
                     onSpace = { if (query.isNotEmpty() && !query.endsWith(' ')) query += " " },
-                    onDelete = { if (query.isNotEmpty()) query = query.dropLast(1) },
                     onClear = { query = "" },
                     onSearch = ::search,
                 )
             }
             if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
             message?.let { Text(it, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(4.dp)) }
+            selectedSong?.let { song ->
+                ElevatedCard(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Column(Modifier.padding(8.dp)) {
+                        Text("Nereye kaydedilsin?", style = MaterialTheme.typography.titleSmall)
+                        Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            MusicDestination.entries.forEach { destination ->
+                                Button(
+                                    modifier = Modifier.weight(1f),
+                                    enabled = !loading,
+                                    onClick = {
+                                        selectedSong = null; loading = true; message = "MP3 hazırlanıyor…"
+                                        scope.launch {
+                                            runCatching {
+                                                val ready = api.prepare(song.url) { message = "MP3 hazırlanıyor: %$it" }
+                                                message = "Dosya kaydediliyor…"
+                                                saveToMediaStore(context, destination, ready.fileName, api.download(ready.fileUrl))
+                                            }.onSuccess { message = "${destination.title}/Musicboards klasörüne indirildi" }
+                                                .onFailure { message = "İndirme hatası: ${it.message}" }
+                                            loading = false
+                                        }
+                                    },
+                                ) { Text(destination.title) }
+                            }
+                            TextButton(onClick = { selectedSong = null }) { Text("İptal") }
+                        }
+                    }
+                }
+            }
             if (!showMiniKeyboard) {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(5.dp), contentPadding = PaddingValues(vertical = 5.dp)) {
                     items(results, key = { it.url }) { song ->
@@ -109,37 +141,10 @@ fun MusicPanel() {
         }
     }
 
-    selectedSong?.let { song ->
-        AlertDialog(
-            onDismissRequest = { selectedSong = null },
-            title = { Text("Nereye kaydedilsin?") },
-            text = {
-                Column {
-                    Text(song.title, maxLines = 2)
-                    MusicDestination.entries.forEach { destination ->
-                        TextButton(modifier = Modifier.fillMaxWidth(), onClick = {
-                            selectedSong = null; loading = true; message = "MP3 hazırlanıyor…"
-                            scope.launch {
-                                runCatching {
-                                    val ready = api.prepare(song.url) { message = "MP3 hazırlanıyor: %$it" }
-                                    message = "Dosya kaydediliyor…"
-                                    saveToMediaStore(context, destination, ready.fileName, api.download(ready.fileUrl))
-                                }.onSuccess { message = "${destination.title} klasörüne indirildi" }
-                                    .onFailure { message = "İndirme hatası: ${it.message}" }
-                                loading = false
-                            }
-                        }) { Text("${destination.title}/Musicboards") }
-                    }
-                }
-            },
-            confirmButton = {},
-            dismissButton = { TextButton(onClick = { selectedSong = null }) { Text("Vazgeç") } },
-        )
-    }
 }
 
 @Composable
-private fun MiniSearchKeyboard(onChar: (String) -> Unit, onSpace: () -> Unit, onDelete: () -> Unit, onClear: () -> Unit, onSearch: () -> Unit) {
+private fun MiniSearchKeyboard(onChar: (String) -> Unit, onSpace: () -> Unit, onClear: () -> Unit, onSearch: () -> Unit) {
     val rows = listOf("QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM", "ĞÜŞİÖÇ")
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         rows.forEach { row ->
@@ -147,10 +152,9 @@ private fun MiniSearchKeyboard(onChar: (String) -> Unit, onSpace: () -> Unit, on
                 row.forEach { char -> TextButton(onClick = { onChar(char.toString().lowercase()) }, contentPadding = PaddingValues(0.dp), modifier = Modifier.weight(1f)) { Text(char.toString()) } }
             }
         }
-        Row(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
             TextButton(onClick = onClear) { Text("Temizle") }
             Button(onClick = onSpace, modifier = Modifier.weight(1f)) { Text("Boşluk") }
-            TextButton(onClick = onDelete) { Text("⌫") }
             TextButton(onClick = onSearch) { Text("Ara") }
         }
     }
