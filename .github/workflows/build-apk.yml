@@ -1,0 +1,29 @@
+name: Build Musicboards APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, music-search ]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build debug APK
+        env:
+          MP3_API_KEY: ${{ secrets.MP3_API_KEY }}
+        run: ./gradlew :app:assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Musicboards-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
